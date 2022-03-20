@@ -1,0 +1,289 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "datafactoryM365toBlobStorage"
+		},
+		"Office3651_servicePrincipalKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'servicePrincipalKey' of 'Office3651'"
+		},
+		"AzureBlobStorage1_servicePrincipalKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'servicePrincipalKey' of 'AzureBlobStorage1'"
+		},
+		"Office3651_properties_typeProperties_servicePrincipalId": {
+			"type": "string",
+			"defaultValue": "0fae668a-7e67-4a19-9d79-d1270ff9e1a2"
+		},
+		"AzureBlobStorage1_properties_typeProperties_serviceEndpoint": {
+			"type": "string",
+			"defaultValue": "https://msgraphdcm365datastore.blob.core.windows.net"
+		},
+		"AzureBlobStorage1_properties_typeProperties_tenant": {
+			"type": "string",
+			"defaultValue": "f5f569b0-3bc5-4ce7-9b46-028fa3bb003b"
+		},
+		"AzureBlobStorage1_properties_typeProperties_servicePrincipalId": {
+			"type": "string",
+			"defaultValue": "0fae668a-7e67-4a19-9d79-d1270ff9e1a2"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Office3651')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "Office365",
+				"typeProperties": {
+					"office365TenantId": "f5f569b0-3bc5-4ce7-9b46-028fa3bb003b",
+					"servicePrincipalTenantId": "f5f569b0-3bc5-4ce7-9b46-028fa3bb003b",
+					"servicePrincipalId": "[parameters('Office3651_properties_typeProperties_servicePrincipalId')]",
+					"servicePrincipalKey": {
+						"type": "SecureString",
+						"value": "[parameters('Office3651_servicePrincipalKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/integrationRuntime1')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Office365Table1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Office3651",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Office365Table",
+				"schema": [],
+				"typeProperties": {
+					"tableName": "BasicDataSet_v0.Message_v0"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Office3651')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlobStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"azureCloudType": "AzurePublic",
+					"serviceEndpoint": "[parameters('AzureBlobStorage1_properties_typeProperties_serviceEndpoint')]",
+					"tenant": "[parameters('AzureBlobStorage1_properties_typeProperties_tenant')]",
+					"servicePrincipalId": "[parameters('AzureBlobStorage1_properties_typeProperties_servicePrincipalId')]",
+					"servicePrincipalKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureBlobStorage1_servicePrincipalKey')]"
+					},
+					"accountKind": "StorageV2"
+				},
+				"connectVia": {
+					"referenceName": "integrationRuntime1",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/integrationRuntime1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/M365JsonFile')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "m365mails"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "CopyFromM365toBlobStorage",
+						"description": "Copying O365 Data\n",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "Office365Source",
+								"dateFilterColumn": "CreatedDateTime",
+								"startTime": "2021-01-01T00:00:00.000Z",
+								"endTime": "2022-03-19T00:00:00.000Z",
+								"outputColumns": [
+									{
+										"name": "ReceivedDateTime"
+									},
+									{
+										"name": "SentDateTime"
+									},
+									{
+										"name": "HasAttachments"
+									},
+									{
+										"name": "InternetMessageId"
+									},
+									{
+										"name": "Subject"
+									},
+									{
+										"name": "Importance"
+									},
+									{
+										"name": "ParentFolderId"
+									},
+									{
+										"name": "Sender"
+									},
+									{
+										"name": "From"
+									},
+									{
+										"name": "ToRecipients"
+									},
+									{
+										"name": "CcRecipients"
+									},
+									{
+										"name": "BccRecipients"
+									},
+									{
+										"name": "ReplyTo"
+									},
+									{
+										"name": "ConversationId"
+									},
+									{
+										"name": "UniqueBody"
+									},
+									{
+										"name": "IsDeliveryReceiptRequested"
+									},
+									{
+										"name": "IsReadReceiptRequested"
+									},
+									{
+										"name": "IsRead"
+									},
+									{
+										"name": "IsDraft"
+									},
+									{
+										"name": "WebLink"
+									},
+									{
+										"name": "CreatedDateTime"
+									},
+									{
+										"name": "LastModifiedDateTime"
+									},
+									{
+										"name": "ChangeKey"
+									},
+									{
+										"name": "Categories"
+									},
+									{
+										"name": "Id"
+									},
+									{
+										"name": "Attachments"
+									}
+								]
+							},
+							"sink": {
+								"type": "BinarySink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "Office365Table1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "M365JsonFile",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Office365Table1')]",
+				"[concat(variables('factoryId'), '/datasets/M365JsonFile')]"
+			]
+		}
+	]
+}

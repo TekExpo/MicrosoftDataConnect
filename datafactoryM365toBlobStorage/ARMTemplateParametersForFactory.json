@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "datafactoryM365toBlobStorage"
+		},
+		"AzureBlobStorage1_servicePrincipalKey": {
+			"value": ""
+		},
+		"Office3651_servicePrincipalKey": {
+			"value": ""
+		},
+		"AzureBlobStorage1_properties_typeProperties_serviceEndpoint": {
+			"value": "https://msgraphdcm365datastore.blob.core.windows.net"
+		},
+		"AzureBlobStorage1_properties_typeProperties_tenant": {
+			"value": "f5f569b0-3bc5-4ce7-9b46-028fa3bb003b"
+		},
+		"AzureBlobStorage1_properties_typeProperties_servicePrincipalId": {
+			"value": "0fae668a-7e67-4a19-9d79-d1270ff9e1a2"
+		},
+		"Office3651_properties_typeProperties_servicePrincipalId": {
+			"value": "0fae668a-7e67-4a19-9d79-d1270ff9e1a2"
+		}
+	}
+}
